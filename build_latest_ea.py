@@ -14,7 +14,6 @@ import requests
 BASE64_REGEX_NO_ENDING_EQUALS=re.compile("^(?:[A-Za-z\d+/]{4})*(?:[A-Za-z\d+/]{3}=|[A-Za-z\d+/]{2})?$")
 YUZU_SRC_LZMA_REGEX=re.compile("^yuzu-windows-msvc-source-[0-9]*-[0-9a-f]*.tar.xz$")
 
-# inspired and modeled after https://gist.github.com/goaaats/9317ee23d406fa66f29bb6bddf53b535
 if not os.path.exists("TOKEN"):
     print("TOKEN file not found, see README.md :(")
     sys.exit(1)

@@ -8,3 +8,8 @@ This script was made by me because there is no early-access updater/installer fo
 4. Run build_latest_ea.py
 5. ???
 6. Profit (binaries)
+
+
+**Credits**:
+* @goaaats for their gist that this project was based off of: https://gist.github.com/goaaats/9317ee23d406fa66f29bb6bddf53b535
+* @yuzu-emu for being chill about this project and being a GOATed emulator
