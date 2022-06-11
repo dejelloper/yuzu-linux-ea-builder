@@ -1,5 +1,6 @@
 import base64
 import datetime
+import json
 import lzma
 import os
 import re
@@ -8,10 +9,11 @@ import subprocess
 import sys
 import tarfile
 import time
+import urllib.error
+from urllib.request import Request, urlopen
 
-import requests
-
-YUZU_SRC_LZMA_REGEX=re.compile("^yuzu-windows-msvc-source-[0-9]*-[0-9a-f]*.tar.xz$")
+YUZU_SRC_LZMA_REGEX = re.compile(
+    "^yuzu-windows-msvc-source-[0-9]*-[0-9a-f]*.tar.xz$")
 
 if not os.path.exists("TOKEN"):
     print("TOKEN file not found, see README.md :(")
@@ -23,28 +25,34 @@ tokenFile.close()
 
 print("Requesting JWT...")
 
-jwtRequest = requests.post(
-    "https://api.yuzu-emu.org/jwt/installer/",
-    headers={"X-Username": username, "X-Token": auth},
-)
-if jwtRequest.status_code != 200:
-    print(f"Failed to get JWT ({jwtRequest.status_code}) :(")
+jwtRequest = Request("https://api.yuzu-emu.org/jwt/installer/", method="POST")
+jwtRequest.add_header("X-Username", username)
+jwtRequest.add_header("X-Token", auth)
+# 403 error if we don't add these liftinstall headers :(
+jwtRequest.add_header("User-Agent", "liftinstall (j-selby)")
+jwtResponse = None
+try:
+    jwtResponse = urlopen(jwtRequest)
+except urllib.error.HTTPError as httpError:
+    print(f"Failed to get JWT ({httpError.code}) :(")
     sys.exit(1)
 
-jwt = jwtRequest.text
+jwt = jwtResponse.read().decode("utf-8")
+
 
 print("Downloading latest build info...")
-downloadsListingRequest = requests.get(
-    "https://api.yuzu-emu.org/downloads/earlyaccess/"
-)
+downloadsListingRequest = Request(
+    "https://api.yuzu-emu.org/downloads/earlyaccess/")
+downloadsListingRequest.add_header("User-Agent", "liftinstall (j-selby)")
+downloadsListingResponse = None
+try:
+    downloadsListingResponse = urlopen(downloadsListingRequest)
+except urllib.error.HTTPError as httpError:
+    print(f"Failed to download latest build info ({httpError.code}) :(")
+    sys.exit(1)
 
-if downloadsListingRequest.status_code != 200:
-    print(
-        f"Failed to download latest build info ({downloadsListingRequest.status_code})")
-
-listingData = downloadsListingRequest.json()
+listingData = json.loads(downloadsListingResponse.read())
 latestVersion = listingData["version"]
-
 
 
 if not os.path.exists("last_downloaded_ver.txt"):
@@ -63,18 +71,19 @@ with open("last_downloaded_ver.txt", "r+") as f:
         for releaseEntry in listingData["files"]:
             if YUZU_SRC_LZMA_REGEX.match(releaseEntry["name"]):
                 print("Downloading LZMA...")
-                downloadLatestRequest = requests.get(
-                    releaseEntry["url"], headers={
-                        "Authorization": f"Bearer {jwt}"}
-                )
-
-                if downloadLatestRequest.status_code != 200:
-                    print(
-                        f"Error downloading LZMA ({downloadLatestRequest.status_code}) :("
-                    )
+                latestLZMARequest = Request(releaseEntry["url"])
+                latestLZMARequest.add_header("Authorization", f"Bearer {jwt}")
+                latestLZMARequest.add_header(
+                    "User-Agent", "liftinstall (j-selby)")
+                latestLZMAResponse = None
+                try:
+                    latestLZMAResponse = urlopen(latestLZMARequest)
+                except urllib.error.HTTPError as httpError:
+                    print(f"Error downloading LZMA ({httpError.code}) :(")
+                    sys.exit(1)
 
                 latestFile = open(releaseEntry["name"], "wb")
-                latestFile.write(downloadLatestRequest.content)
+                latestFile.write(latestLZMAResponse.read())
                 latestFile.close()
 
                 print("Extracting...")
