@@ -11,7 +11,6 @@ import time
 
 import requests
 
-BASE64_REGEX_NO_ENDING_EQUALS=re.compile("^(?:[A-Za-z\d+/]{4})*(?:[A-Za-z\d+/]{3}=|[A-Za-z\d+/]{2})?$")
 YUZU_SRC_LZMA_REGEX=re.compile("^yuzu-windows-msvc-source-[0-9]*-[0-9a-f]*.tar.xz$")
 
 if not os.path.exists("TOKEN"):
@@ -20,9 +19,6 @@ if not os.path.exists("TOKEN"):
 tokenFile = open("TOKEN", "r")
 token = tokenFile.read().strip()
 tokenFile.close()
-if not BASE64_REGEX_NO_ENDING_EQUALS.match(token):
-    print("Invalid token :(")
-    sys.exit(1)
 [username, auth] = base64.b64decode(token + "==").decode().split(":")
 
 print("Requesting JWT...")
@@ -94,8 +90,7 @@ with open("last_downloaded_ver.txt", "r+") as f:
                 srcPath = f"./src/{releaseEntry['name'].replace('.tar.xz', '')}"
 
                 with open("build.sh", "w") as buildSH:
-                    # this filename would normally be sanitized but its already valited by the regex
-                    # -DCMAKE_C_COMPILER=gcc-10 -DCMAKE_CXX_COMPILER=g++-10 
+                    # this filename would normally be sanitized but its already validated by the regex
                     buildSH.write(
                         f"cd {srcPath}\nmkdir build\ncd build\ncmake .. -GNinja && ninja"
                     )
