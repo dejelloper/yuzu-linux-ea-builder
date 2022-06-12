@@ -101,7 +101,7 @@ with open("last_downloaded_ver.txt", "r+") as f:
                 with open("build.sh", "w") as buildSH:
                     # this filename would normally be sanitized but its already validated by the regex
                     buildSH.write(
-                        f"cd {srcPath}\nmkdir build\ncd build\ncmake .. -GNinja && ninja"
+                        f"cd {srcPath}\nmkdir build\ncd build\ncmake .. -GNinja\nninja"
                     )
 
                 print("Building...")
